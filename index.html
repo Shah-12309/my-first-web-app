@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer App</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      margin-top: 50px;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    li {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+
+</head>
+<body>
+
+  <div class="container">
+    <h1>Customer App</h1>
+
+    <input id="name" placeholder="Enter name">
+    <button onclick="addCustomer()">Add Customer</button>
+
+    <ul id="list"></ul>
+  </div>
+
+<script>
+  const API = "http://localhost:3000/customers";
+
+  async function addCustomer() {
+    const name = document.getElementById("name").value;
+
+    if (name === "") return;
+
+    await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+
+    document.getElementById("name").value = "";
+
+    loadCustomers();
+  }
+
+  async function deleteCustomer(id) {
+    await fetch(API + "/" + id, {
+      method: "DELETE"
+    });
+
+    loadCustomers();
+  }
+
+  async function loadCustomers() {
+    const res = await fetch(API);
+    const data = await res.json();
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    data.forEach(function(c) {
+      const li = document.createElement("li");
+
+      li.innerHTML = `
+        ${c.name}
+        <button onclick="deleteCustomer(${c.id})">❌</button>
+      `;
+
+      list.appendChild(li);
+    });
+  }
+
+  loadCustomers();
+</script>
+
+</body>
+</html>
