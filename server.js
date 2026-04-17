@@ -8,6 +8,10 @@ app.use(express.json());
 
 let customers = [];
 
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
+});
+
 app.get("/customers", (req, res) => {
   res.json(customers);
 });
@@ -31,5 +35,4 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
-
 });
