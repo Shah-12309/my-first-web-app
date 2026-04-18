@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pro SaaS Dashboard</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #f4f6f9;
+    }
+
+    .hidden { display: none; }
+
+    /* LOGIN */
+    .login {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .btn-primary {
+      background: #4b49ac;
+      color: white;
+      width: 100%;
+    }
+
+    .btn-delete { background: #e74c3c; color: white; }
+    .btn-edit { background: #f39c12; color: white; margin-right: 5px; }
+
+    /* DASHBOARD */
+    .dashboard {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #1e1e2f;
+      color: white;
+      padding: 20px;
+    }
+
+    .menu-item {
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .menu-item:hover { background: #33334d; }
+    .active { background: #4b49ac; }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .content {
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .cards {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      flex: 1;
+      min-width: 200px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .customer-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      background: #f1f1f1;
+      padding: 8px;
+      border-radius: 5px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard { flex-direction: column; }
+      .sidebar { width: 100%; display: flex; }
+      .menu-item { flex: 1; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login">
+  <div class="login-box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button class="btn-primary" onclick="login()">Login</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="app" class="dashboard" style="display:none;">
+
+  <div class="sidebar">
+    <h2>My App</h2>
+    <div class="menu-item active" onclick="showPage('dashboard', this)">Dashboard</div>
+    <div class="menu-item" onclick="showPage('customers', this)">Customers</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h3 id="pageTitle">Dashboard</h3>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="content">
+
+      <div id="dashboard">
+        <div class="cards">
+          <div class="card">
+            <h3>Total Customers</h3>
+            <h1 id="totalCustomers">0</h1>
+          </div>
+        </div>
+      </div>
+
+      <div id="customers" class="hidden">
+        <div class="customer-box">
+
+          <h2>Customer Manager</h2>
+
+          <input id="name" placeholder="Enter name">
+          <button class="btn-primary" onclick="addCustomer()">Save</button>
+
+          <input id="search" placeholder="Search..." onkeyup="filterCustomers()">
+
+          <ul id="list"></ul>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://my-first-web-app-7ryd.onrender.com";
+
+let customersData = [];
+let editingId = null;
+
+/* LOGIN */
+function login() {
+  const user = document.getElementById("username").value.trim();
+  const pass = document.getElementById("password").value.trim();
+
+  if (user === "admin" && pass === "1234") {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    loadCustomers();
+  } else {
+    alert("Invalid login");
+  }
+}
+
+function logout() {
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginPage").style.display = "flex";
+}
+
+/* NAVIGATION */
+function showPage(pageId, el) {
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("customers").classList.add("hidden");
+
+  document.getElementById(pageId).classList.remove("hidden");
+
+  document.querySelectorAll(".menu-item").forEach(e => e.classList.remove("active"));
+  el.classList.add("active");
+
+  document.getElementById("pageTitle").innerText = pageId;
+}
+
+/* ADD / UPDATE */
+async function addCustomer() {
+  const name = document.getElementById("name").value.trim();
+  if (!name) return;
+
+  try {
+    if (editingId) {
+      // TRY UPDATE (PUT)
+      const res = await fetch(API + "/" + editingId, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ name })
+      });
+
+      // 🔥 FALLBACK (if PUT not supported)
+      if (!res.ok) {
+        await fetch(API + "/" + editingId, { method: "DELETE" });
+
+        await fetch(API, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ name })
+        });
+      }
+
+      editingId = null;
+    } else {
+      await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ name })
+      });
+    }
+
+    document.getElementById("name").value = "";
+    loadCustomers();
+
+  } catch (err) {
+    alert("Error updating customer");
+    console.error(err);
+  }
+}
+
+/* EDIT */
+function editCustomer(id, name) {
+  document.getElementById("name").value = name;
+  editingId = id;
+}
+
+/* DELETE */
+async function deleteCustomer(id) {
+  if (!confirm("Delete?")) return;
+
+  await fetch(API + "/" + id, { method: "DELETE" });
+  loadCustomers();
+}
+
+/* LOAD */
+async function loadCustomers() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  customersData = data;
+  document.getElementById("totalCustomers").innerText = data.length;
+
+  renderList(data);
+}
+
+/* RENDER (SAFE VERSION 🔥) */
+function renderList(data) {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (data.length === 0) {
+    list.innerHTML = "<p>No customers</p>";
+    return;
+  }
+
+  data.forEach(c => {
+    const li = document.createElement("li");
+
+    // SAFE BUTTON CREATION (no string breaking)
+    const nameSpan = document.createElement("span");
+    nameSpan.innerText = c.name;
+
+    const actions = document.createElement("div");
+
+    const editBtn = document.createElement("button");
+    editBtn.innerText = "Edit";
+    editBtn.className = "btn-edit";
+    editBtn.onclick = () => editCustomer(c.id, c.name);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.innerText = "Delete";
+    deleteBtn.className = "btn-delete";
+    deleteBtn.onclick = () => deleteCustomer(c.id);
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
+    li.appendChild(nameSpan);
+    li.appendChild(actions);
+
+    list.appendChild(li);
+  });
+}
+
+/* SEARCH */
+function filterCustomers() {
+  const val = document.getElementById("search").value.toLowerCase();
+  const filtered = customersData.filter(c =>
+    c.name.toLowerCase().includes(val)
+  );
+  renderList(filtered);
+}
+</script>
+
+</body>
+</html>
