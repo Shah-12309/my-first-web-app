@@ -7,10 +7,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* 🔗 CONNECT MONGODB */
-mongoose.connect("mongodb+srv://admin:1234@cloudaws.5aqskkm.mongodb.net/?appName=CloudAWS/mydb")
+/* 🔗 CONNECT MONGODB (use ENV for Render) */
+mongoose.connect(process.env.MONGODB_URL)
 .then(() => console.log("MongoDB Connected ✅"))
 .catch(err => console.log(err));
+
+/* 🏠 HOME ROUTE */
+app.get("/", (req, res) => {
+  res.send("API is running 🚀");
+});
 
 /* 📦 SCHEMA */
 const CustomerSchema = new mongoose.Schema({
@@ -19,13 +24,13 @@ const CustomerSchema = new mongoose.Schema({
 
 const Customer = mongoose.model("Customer", CustomerSchema);
 
-/* GET */
+/* GET ALL */
 app.get("/customers", async (req, res) => {
   const customers = await Customer.find();
   res.json(customers);
 });
 
-/* POST */
+/* ADD */
 app.post("/customers", async (req, res) => {
   const newCustomer = new Customer({
     name: req.body.name
@@ -35,7 +40,7 @@ app.post("/customers", async (req, res) => {
   res.json(newCustomer);
 });
 
-/* PUT */
+/* UPDATE */
 app.put("/customers/:id", async (req, res) => {
   const updated = await Customer.findByIdAndUpdate(
     req.params.id,
