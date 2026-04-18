@@ -1,64 +1,80 @@
 const express = require("express");
-const cors = require("cors");
 const mongoose = require("mongoose");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-/* 🔗 CONNECT MONGODB (use ENV for Render) */
-mongoose.connect(process.env.MONGODB_URL)
-.then(() => console.log("MongoDB Connected ✅"))
+// ✅ Serve frontend
+app.use(express.static(path.join(__dirname, "public")));
+
+// ✅ MongoDB connection (YOUR STRING HERE)
+mongoose.connect(process.env.MONGO_URI)
+.then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-/* 🏠 HOME ROUTE */
-app.get("/", (req, res) => {
-  res.send("API is running 🚀");
-});
-
-/* 📦 SCHEMA */
-const CustomerSchema = new mongoose.Schema({
+// ✅ Schema
+const customerSchema = new mongoose.Schema({
   name: String
 });
 
-const Customer = mongoose.model("Customer", CustomerSchema);
+const Customer = mongoose.model("Customer", customerSchema);
 
-/* GET ALL */
+// ✅ GET all customers
 app.get("/customers", async (req, res) => {
-  const customers = await Customer.find();
-  res.json(customers);
+  try {
+    const customers = await Customer.find();
+    res.json(customers);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
-/* ADD */
+// ✅ ADD customer
 app.post("/customers", async (req, res) => {
-  const newCustomer = new Customer({
-    name: req.body.name
-  });
-
-  await newCustomer.save();
-  res.json(newCustomer);
+  try {
+    const newCustomer = new Customer({ name: req.body.name });
+    await newCustomer.save();
+    res.json(newCustomer);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
-/* UPDATE */
+// ✅ UPDATE customer
 app.put("/customers/:id", async (req, res) => {
-  const updated = await Customer.findByIdAndUpdate(
-    req.params.id,
-    { name: req.body.name },
-    { new: true }
-  );
-
-  res.json(updated);
+  try {
+    const updated = await Customer.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
-/* DELETE */
+// ✅ DELETE customer
 app.delete("/customers/:id", async (req, res) => {
-  await Customer.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
+  try {
+    await Customer.findByIdAndDelete(req.params.id);
+    res.send("Deleted");
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
-const PORT = process.env.PORT || 3000;
+// ✅ Show index.html on root
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
+// ✅ Start server
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log("Server running on port", PORT);
 });
