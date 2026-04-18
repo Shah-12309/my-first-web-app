@@ -221,66 +221,70 @@ function logout() {
   document.getElementById("loginPage").style.display = "flex";
 }
 
-/* NAVIGATION */
-function showPage(pageId, el) {
-  document.getElementById("dashboard").classList.add("hidden");
-  document.getElementById("customers").classList.add("hidden");
-
-  document.getElementById(pageId).classList.remove("hidden");
-
-  document.querySelectorAll(".menu-item").forEach(e => e.classList.remove("active"));
-  el.classList.add("active");
-
-  document.getElementById("pageTitle").innerText = pageId;
-}
-
 /* ADD / UPDATE */
 async function addCustomer() {
   const name = document.getElementById("name").value.trim();
   if (!name) return;
 
-  if (editingId) {
-    await fetch(API + "/" + editingId, {
-      method: "PUT",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ name })
-    });
-    editingId = null;
-  } else {
-    await fetch(API, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ name })
-    });
+  try {
+    let res;
+
+    if (editingId) {
+      res = await fetch(API + "/" + editingId, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ name })
+      });
+      editingId = null;
+    } else {
+      res = await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ name })
+      });
+    }
+
+    console.log("STATUS:", res.status);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Server error:", text);
+      alert("Server error: " + text);
+      return;
+    }
+
+    document.getElementById("name").value = "";
+    loadCustomers();
+
+  } catch (err) {
+    console.error("FETCH ERROR:", err);
+    alert("Request failed. Check console (F12).");
   }
-
-  document.getElementById("name").value = "";
-  loadCustomers();
-}
-
-/* EDIT */
-function editCustomer(id, name) {
-  document.getElementById("name").value = name;
-  editingId = id;
 }
 
 /* DELETE */
 async function deleteCustomer(id) {
-  if (!confirm("Delete?")) return;
-
-  await fetch(API + "/" + id, { method: "DELETE" });
-  loadCustomers();
+  try {
+    await fetch(API + "/" + id, { method: "DELETE" });
+    loadCustomers();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 /* LOAD */
 async function loadCustomers() {
-  const res = await fetch(API);
-  const data = await res.json();
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
 
-  customersData = data;
-  document.getElementById("totalCustomers").innerText = data.length;
+    customersData = data;
+    document.getElementById("totalCustomers").innerText = data.length;
 
-  renderList(data);
+    renderList(data);
+  } catch (err) {
+    console.error("LOAD ERROR:", err);
+  }
 }
 
 /* RENDER */
@@ -304,7 +308,10 @@ function renderList(data) {
     const editBtn = document.createElement("button");
     editBtn.innerText = "Edit";
     editBtn.className = "btn-edit";
-    editBtn.onclick = () => editCustomer(c._id, c.name);
+    editBtn.onclick = () => {
+      document.getElementById("name").value = c.name;
+      editingId = c._id;
+    };
 
     const deleteBtn = document.createElement("button");
     deleteBtn.innerText = "Delete";
