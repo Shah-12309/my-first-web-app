@@ -197,7 +197,7 @@
 </div>
 
 <script>
-const API = "https://my-first-web-app-7ryd.onrender.com";
+const API = "https://my-first-web-app-7ryd.onrender.com/customers";
 
 let customersData = [];
 let editingId = null;
@@ -239,42 +239,23 @@ async function addCustomer() {
   const name = document.getElementById("name").value.trim();
   if (!name) return;
 
-  try {
-    if (editingId) {
-      // TRY UPDATE (PUT)
-      const res = await fetch(API + "/" + editingId, {
-        method: "PUT",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ name })
-      });
-
-      // 🔥 FALLBACK (if PUT not supported)
-      if (!res.ok) {
-        await fetch(API + "/" + editingId, { method: "DELETE" });
-
-        await fetch(API, {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ name })
-        });
-      }
-
-      editingId = null;
-    } else {
-      await fetch(API, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ name })
-      });
-    }
-
-    document.getElementById("name").value = "";
-    loadCustomers();
-
-  } catch (err) {
-    alert("Error updating customer");
-    console.error(err);
+  if (editingId) {
+    await fetch(API + "/" + editingId, {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ name })
+    });
+    editingId = null;
+  } else {
+    await fetch(API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ name })
+    });
   }
+
+  document.getElementById("name").value = "";
+  loadCustomers();
 }
 
 /* EDIT */
@@ -302,7 +283,7 @@ async function loadCustomers() {
   renderList(data);
 }
 
-/* RENDER (SAFE VERSION 🔥) */
+/* RENDER */
 function renderList(data) {
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -315,7 +296,6 @@ function renderList(data) {
   data.forEach(c => {
     const li = document.createElement("li");
 
-    // SAFE BUTTON CREATION (no string breaking)
     const nameSpan = document.createElement("span");
     nameSpan.innerText = c.name;
 
@@ -324,12 +304,12 @@ function renderList(data) {
     const editBtn = document.createElement("button");
     editBtn.innerText = "Edit";
     editBtn.className = "btn-edit";
-    editBtn.onclick = () => editCustomer(c.id, c.name);
+    editBtn.onclick = () => editCustomer(c._id, c.name);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.innerText = "Delete";
     deleteBtn.className = "btn-delete";
-    deleteBtn.onclick = () => deleteCustomer(c.id);
+    deleteBtn.onclick = () => deleteCustomer(c._id);
 
     actions.appendChild(editBtn);
     actions.appendChild(deleteBtn);
