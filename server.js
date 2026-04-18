@@ -13,8 +13,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ MongoDB connection (YOUR STRING HERE)
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
+.then(() => console.log("MongoDB Connected ✅"))
+.catch(err => console.log("MongoDB ERROR ❌:", err.message));
 
 // ✅ Schema
 const customerSchema = new mongoose.Schema({
